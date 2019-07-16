@@ -20,15 +20,20 @@ defmodule Insbug do
   end
 
   def find_page(category, sort, offset, output) do
-    url = "#{@ins_url}/#{category}/projects/?sort=#{sort}&offset=#{offset}"
-    projects = get_projects(url)
+    url = "#{@ins_url}/#{category}/projects/#{sort}/?sort=#{sort}&offset=#{offset}"
 
-    projects
-    |> Enum.each(fn path ->
-      Task.async(__MODULE__, :check_license, [path, output])
-    end)
+    try do
+      projects = get_projects(url)
 
-    projects
+      projects
+      |> Enum.each(fn path ->
+        Task.async(__MODULE__, :check_license, [path, output])
+      end)
+
+      projects
+    rescue
+      _ -> []
+    end
   end
 
   def check_license(path, output) do
@@ -64,6 +69,8 @@ defmodule Insbug do
   end
 
   defp get_projects(url) do
+    IO.inspect(url)
+
     case HTTPoison.get(url) do
       {:ok, %{body: body}} ->
         body
